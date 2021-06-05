@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  ApiGateWayPractice
+
+Globals:
+  Function:
+    Runtime: java8
+    MemorySize: 512
+    Timeout: 20
+    Environment:
+      Variables:
+        ORDERS_TABLE: !Ref OrderTable
+
+Resources:
+  OrderTable:  
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: id
+        Type: Number
+  CreateOrderFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: C:\AWS-Practice\ApiGateWayPractice\CreateOrderFunction\target\CreateOrderFunction-1.0.jar
+      Handler: com.aws.createorderfunction.CreateOrder::createOrder
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrderTable
+      Events:
+        OrderEvents:
+          Type: Api
+          Properties:
+            Path: /orders
+            Method: POST
+  
+  GetOrderFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: C:\AWS-Practice\ApiGateWayPractice\CreateOrderFunction\target\CreateOrderFunction-1.0.jar
+      Handler: com.aws.createorderfunction.CreateOrder::getOrder
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref OrderTable
+      Events:
+        OrderEvents:
+          Type: Api
+          Properties:
+            Path: /orders
+            Method: GET
+      
+Outputs:
+  CreateOrderApi:
+     Description: "Api Gateway endpoint for create order API"
+     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Stage/orders"
+
+  CreateOrderFunction:
+     Description: "CreateOrderFunction: ARN"
+     Value: !GetAtt CreateOrderFunction.Arn
+
+  CreateOrderFunctionIAMRole:
+     Description: "CreateOrderFunction IAM Role ARN"
+     Value: !GetAtt CreateOrderFunctionRole.Arn
